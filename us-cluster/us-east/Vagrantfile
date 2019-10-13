@@ -65,21 +65,6 @@ do
 done
 nomad -autocomplete-install
 
-mkdir -p ~/nomad
-echo '# Increase log verbosity
-log_level = "DEBUG"
-
-# Setup data dir
-data_dir = "/tmp/server1"
-
-# Enable the server
-server {
-    enabled = true
-
-    # Self-elect, should be 3 or 5 for production
-    bootstrap_expect = 1
-}'>~/nomad/server.hcl
-
 (
 cat <<-EOF
   [Unit]
@@ -89,7 +74,7 @@ cat <<-EOF
 
   [Service]
   Restart=on-failure
-  ExecStart="/usr/bin/nomad" agent -config /home/vagrant/nomad/server.hcl
+  ExecStart="/usr/bin/nomad" agent -config /home/vagrant/agent-config/us-east_server.hcl
   ExecReload=/bin/kill -HUP $MAINPID
 
   [Install]
@@ -98,59 +83,6 @@ EOF
 ) | sudo tee /etc/systemd/system/nomad-server.service
 sudo systemctl enable nomad-server.service
 sudo systemctl start nomad-server
-
-
-echo '
-# Increase log verbosity
-log_level = "DEBUG"
-
-# Setup data dir
-data_dir = "/tmp/client1"
-
-# Give the agent a unique name. Defaults to hostname
-name = "client1"
-
-# Enable the client
-client {
-    enabled = true
-
-    # For demo assume we are talking to server1. For production,
-    # this should be like "nomad.service.consul:4647" and a system
-    # like Consul used for service discovery.
-    servers = ["127.0.0.1:4647"]
-}
-
-# Modify our port to avoid a collision with server1
-ports {
-    http = 5656
-}
-' >~/nomad/client1.hcl
-
-echo '
-# Increase log verbosity
-log_level = "DEBUG"
-
-# Setup data dir
-data_dir = "/tmp/client2"
-
-# Give the agent a unique name. Defaults to hostname
-name = "client2"
-
-# Enable the client
-client {
-    enabled = true
-
-    # For demo assume we are talking to server1. For production,
-    # this should be like "nomad.service.consul:4647" and a system
-    # like Consul used for service discovery.
-    servers = ["127.0.0.1:4647"]
-}
-
-# Modify our port to avoid a collision with server1
-ports {
-    http = 5657
-}
-' >~/nomad/client2.hcl
 
 
 (
@@ -162,7 +94,7 @@ cat <<-EOF
 
   [Service]
   Restart=on-failure
-  ExecStart="/usr/bin/nomad" agent -config /home/vagrant/nomad/client1.hcl
+  ExecStart="/usr/bin/nomad" agent -config /home/vagrant/agent-config/client1.hcl
   ExecReload=/bin/kill -HUP $MAINPID
 
   [Install]
@@ -181,7 +113,7 @@ cat <<-EOF
 
   [Service]
   Restart=on-failure
-  ExecStart="/usr/bin/nomad" agent -config /home/vagrant/nomad/client2.hcl
+  ExecStart="/usr/bin/nomad" agent -config /home/vagrant/agent-config/client2.hcl
   ExecReload=/bin/kill -HUP $MAINPID
 
   [Install]
@@ -195,11 +127,14 @@ SCRIPT
 
 Vagrant.configure(2) do |config|
   config.vm.box = "bento/ubuntu-18.04" # 18.04 LTS
-  config.vm.hostname = "nomad"
+  config.vm.hostname = "nomad-us-east"
   config.vm.provision "shell", inline: $script, privileged: false
 
   # Expose the nomad api and ui to the host
-  config.vm.network "forwarded_port", guest: 4646, host: 4646, auto_correct: true
+  # config.vm.network "forwarded_port", guest: 4646, host: 4646, auto_correct: true
+  config.vm.network "private_network", ip: "10.0.0.10"
+
+  config.vm.synced_folder "../../agent-config", "/home/vagrant/agent-config"
 
   # Increase memory for Parallels Desktop
   config.vm.provider "parallels" do |p, o|
@@ -208,7 +143,7 @@ Vagrant.configure(2) do |config|
 
   # Increase memory for Virtualbox
   config.vm.provider "virtualbox" do |vb|
-        vb.memory = "1024"
+        vb.memory = "2024"
   end
 
   # Increase memory for VMware
