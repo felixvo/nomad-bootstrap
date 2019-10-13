@@ -12,9 +12,6 @@ server {
 
     # Self-elect, should be 3 or 5 for production
     bootstrap_expect = 1
-    server_join {
-        retry_join = ["10.0.0.10:4648"]
-    }
 }
 name = "nomad-server-eu"
 region = "eu"

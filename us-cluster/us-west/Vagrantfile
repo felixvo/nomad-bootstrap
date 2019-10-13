@@ -94,7 +94,7 @@ cat <<-EOF
 
   [Service]
   Restart=on-failure
-  ExecStart="/usr/bin/nomad" agent -config /home/vagrant/agent-config/client1.hcl
+  ExecStart="/usr/bin/nomad" agent -config /home/vagrant/agent-config/us-west-client1.hcl
   ExecReload=/bin/kill -HUP $MAINPID
 
   [Install]
@@ -104,24 +104,6 @@ EOF
 sudo systemctl enable nomad-client1.service
 sudo systemctl start nomad-client1
 
-(
-cat <<-EOF
-  [Unit]
-  Description=Nomad Client 2
-  Requires=network-online.target
-  After=network-online.target
-
-  [Service]
-  Restart=on-failure
-  ExecStart="/usr/bin/nomad" agent -config /home/vagrant/agent-config/client2.hcl
-  ExecReload=/bin/kill -HUP $MAINPID
-
-  [Install]
-  WantedBy=multi-user.target
-EOF
-) | sudo tee /etc/systemd/system/nomad-client2.service
-sudo systemctl enable nomad-client2.service
-sudo systemctl start nomad-client2
 
 SCRIPT
 
